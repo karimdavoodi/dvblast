@@ -2053,8 +2053,8 @@ static bool PIDWouldBeSelected( uint8_t *p_es )
             j++;
 
             if( i_tag == 0x46 /* VBI + teletext */
-                 || i_tag == 0x56 /* teletext */
-                 || i_tag == 0x59 /* dvbsub */
+              //   || i_tag == 0x56 /* teletext */
+              //   || i_tag == 0x59 /* dvbsub */   
                  || i_tag == 0x6a /* A/52 */
                  || i_tag == 0x7a /* Enhanced A/52 */
                  || i_tag == 0x7b /* DCA */

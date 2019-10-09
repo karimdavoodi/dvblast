@@ -593,7 +593,17 @@ static void sighandler(struct ev_loop *loop, struct ev_signal *w, int revents)
             break;
     }
 }
-
+/*****************************************************************************
+ * KDKD Write dvb stat
+ *****************************************************************************/
+void write_dvb_stat();
+static void stat_cb(struct ev_loop *loop, struct ev_timer *w, int revents)
+{
+    msg_Info( NULL, "######## Write DVB stat." );
+	write_dvb_stat();
+	w->repeat = 20.;
+    ev_timer_again (loop, w);
+}
 /*****************************************************************************
  * Quit timeout
  *****************************************************************************/
@@ -733,6 +743,7 @@ int main( int i_argc, char **pp_argv )
     int b_enable_syslog = 0;
     struct ev_signal sigint_watcher, sigterm_watcher, sighup_watcher;
     struct ev_timer quit_watcher;
+    struct ev_timer write_stat;
 
     print_fh = stdout;
 
@@ -1320,11 +1331,12 @@ int main( int i_argc, char **pp_argv )
                       i_quit_timeout_duration / 1000000., 0);
         ev_timer_start(event_loop, &quit_watcher);
     }
-
+	//KDKD
+	write_dvb_stat();
+	ev_timer_init(&write_stat, stat_cb, 20., 0);
+	ev_timer_start(event_loop, &write_stat);
     outputs_Init();
-
     ev_run(event_loop, 0);
-
     mrtgClose();
     outputs_Close( i_nb_outputs );
     demux_Close();

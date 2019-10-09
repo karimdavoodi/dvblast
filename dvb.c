@@ -70,6 +70,8 @@
 #define MAX_READ_ONCE 50
 #define DVR_BUFFER_SIZE 40*188*1024 /* bytes */
 
+char *psk_8 = "psk_8";
+char *qpsk  = "qpsk";
 int i_dvr_buffer_size = DVR_BUFFER_SIZE;
 
 static int i_frontend, i_dvr;
@@ -1162,6 +1164,9 @@ static void FrontendSet( bool b_init )
     if ( ioctl( i_frontend, FE_GET_PROPERTY, &info_cmdseq ) < 0 )
     {
 #endif
+		// KDKD for  CXD2843 DVB-C/C2 DVB-T/T2" type "QAM  (DVB-C)"  !!!!!!!
+		if ( info.type == FE_QAM )
+			info.type = FE_OFDM;
         /* DVBv3 device */
         switch ( info.type )
         {
@@ -1524,4 +1529,40 @@ uint8_t dvb_FrontendStatus( uint8_t *p_answer, ssize_t *pi_size )
     return RET_FRONTEND_STATUS;
 }
 
+// KDKD
+void write_dvb_stat()
+{
+    struct ret_frontend_status st;
+	ssize_t p_size = 0;
+	uint8_t ret;
+	char fname[80];
+	FILE *f;
+	int pid;
+
+	pid = (int)getpid();
+
+	sprintf(fname,"/opt/sms/tmp/dvbstat_%d.txt",i_adapter); 
+	f = fopen(fname,"w");
+	if(f != NULL){
+		memset(&st,0,sizeof(struct ret_frontend_status));
+		ret = dvb_FrontendStatus((uint8_t *)&st, &p_size );
+		if(ret ==  RET_ERR || (!st.i_snr && !st.i_strength)){
+			fprintf(f,"0 0 0 unlock %d\n",pid); 
+			if(i_frequency < 13000000){ /* DVBS */
+				if(psz_modulation == NULL)
+					psz_modulation = psk_8;
+				else if(!strcmp(psz_modulation,"psk_8"))
+					psz_modulation = qpsk;
+				else if(!strcmp(psz_modulation,"qpsk"))
+					psz_modulation = NULL;
+				msg_Warn( NULL, "Reset dvbs(%d) with modulation:%s",i_adapter,
+						psz_modulation?psz_modulation:"NULL");
+				FrontendSet(true);
+			}
+		}else{
+			fprintf(f,"%u %u %u lock %d\n",st.i_strength,st.i_snr,st.i_ber,pid); 
+		}
+		fclose(f);
+	}
+}
 #endif
